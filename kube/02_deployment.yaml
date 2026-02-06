@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doodle
+  namespace: doodle-prd
+spec:
+  selector:
+    matchLabels:
+      app: doodle
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: doodle
+    spec:
+      containers:
+        - name: doodle-backend
+          image: techlab21.azurecr.io/doodle:1.0
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: PORT
+              value: "8080"
+            - name: DB_HOST
+              value: "postgres-postgresql.doodle-prd.svc.cluster.local"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: JWT_SECRET
+            - name: REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: REFRESH_SECRET
+            - name: FRONTEND_URL
+              value: "https://${DOMAIN}"
+            - name: BASE_URL
+              value: "https://${DOMAIN}"
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: GOOGLE_CLIENT_SECRET
+            - name: GOOGLE_REDIRECT_URL
+              value: "https://${DOMAIN}/auth/google/callback"
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: SMTP_HOST
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: SMTP_PORT
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: SMTP_USER
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: SMTP_PASSWORD
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: doodle-env
+                  key: SMTP_FROM
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      imagePullSecrets:
+        - name: imageregistry
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doodle-backend
+  namespace: doodle-prd
+spec:
+  selector:
+    app: doodle
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
