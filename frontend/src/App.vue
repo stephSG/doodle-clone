@@ -1,47 +1,118 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-    <!-- Navbar -->
-    <nav class="navbar bg-base-100 shadow-md sticky top-0 z-50">
-      <div class="container mx-auto px-4">
-        <div class="flex-1">
-          <router-link to="/" class="btn btn-ghost text-xl">
-            📅 Doodle Clone
-          </router-link>
-        </div>
-        <div class="flex-none gap-2">
+  <div class="min-h-screen flex flex-col bg-slate-50">
+    <!-- Premium App Bar -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
+      <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <!-- Logo -->
+        <router-link to="/" class="flex items-center gap-2">
+          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+          </div>
+          <span class="text-xl font-extrabold text-slate-900">Doodle</span>
+        </router-link>
+
+        <!-- User Menu / Auth Buttons -->
+        <div class="flex items-center gap-2">
+          <!-- Dark Mode Toggle -->
+          <button
+            @click="toggleTheme"
+            class="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            :title="isDark ? 'Mode clair' : 'Mode sombre'"
+          >
+            <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+          </button>
+
           <template v-if="!authStore.isAuthenticated">
-            <router-link to="/login" class="btn btn-ghost">Login</router-link>
-            <router-link to="/register" class="btn btn-primary">Sign Up</router-link>
+            <router-link to="/login" class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors">
+              Connexion
+            </router-link>
+            <router-link to="/register" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-xl transition-all active:scale-95">
+              S'inscrire
+            </router-link>
           </template>
           <template v-else>
-            <router-link to="/create" class="btn btn-primary">
-              <span class="hidden sm:inline">+ New Poll</span>
-              <span class="sm:hidden">+</span>
+            <router-link to="/create" class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-100 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14"/>
+                <path d="M5 12h14"/>
+              </svg>
             </router-link>
-            <div class="dropdown dropdown-end">
-              <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                <div class="w-10 rounded-full">
-                  <img :alt="authStore.user?.name" :src="authStore.user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + authStore.user?.name" />
+
+            <!-- User Dropdown -->
+            <div class="dropdown dropdown-end" ref="userDropdown">
+              <div tabindex="0" role="button" class="flex items-center gap-2 p-1 pr-3 bg-slate-50 rounded-full hover:bg-slate-100 transition-colors cursor-pointer">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
+                  {{ userInitial }}
                 </div>
+                <span class="text-sm font-bold text-slate-700 max-w-20 truncate">{{ authStore.user?.name }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
               </div>
-              <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                <li><router-link to="/dashboard">Dashboard</router-link></li>
-                <li><router-link to="/profile">Profile</router-link></li>
-                <li><a @click.prevent="authStore.logout">Logout</a></li>
+              <ul tabindex="0" class="dropdown-content z-[100] menu p-2 shadow-xl bg-white rounded-2xl w-52 border border-slate-100 mt-2">
+                <li class="px-2 py-1">
+                  <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold">
+                      {{ userInitial }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-bold text-slate-800 text-sm truncate">{{ authStore.user?.name }}</p>
+                      <p class="text-xs text-slate-400 truncate">{{ authStore.user?.email }}</p>
+                    </div>
+                  </div>
+                </li>
+                <li><hr class="my-1 border-slate-100"></li>
+                <li>
+                  <router-link to="/dashboard" class="flex items-center gap-3 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect width="7" height="9" x="3" y="3" rx="1"/>
+                      <rect width="7" height="5" x="14" y="3" rx="1"/>
+                      <rect width="7" height="9" x="14" y="12" rx="1"/>
+                      <rect width="7" height="5" x="3" y="16" rx="1"/>
+                    </svg>
+                    <span class="font-medium">Tableau de bord</span>
+                  </router-link>
+                </li>
+                <li>
+                  <router-link to="/profile" class="flex items-center gap-3 text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span class="font-medium">Profil</span>
+                  </router-link>
+                </li>
+                <li><hr class="my-1 border-slate-100"></li>
+                <li>
+                  <a @click.prevent="handleLogout" class="flex items-center gap-3 text-rose-600 hover:bg-rose-50 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                      <polyline points="16 17 21 12 16 7"/>
+                      <line x1="21" x2="9" y1="12" y2="12"/>
+                    </svg>
+                    <span class="font-medium">Déconnexion</span>
+                  </a>
+                </li>
               </ul>
             </div>
           </template>
-          <label class="swap swap-rotate btn btn-ghost btn-circle">
-            <input type="checkbox" @change="toggleTheme" />
-            <svg class="swap-on fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
-            <svg class="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
-          </label>
         </div>
       </div>
     </nav>
 
     <!-- Main content -->
-    <main class="flex-1 container mx-auto px-4 py-8">
+    <main class="flex-1">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -49,33 +120,85 @@
       </router-view>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer footer-center p-10 bg-base-200 text-base-content">
-      <div>
-        <p class="font-bold">Doodle Clone</p>
-        <p>Schedule meetings and events easily</p>
-        <p>© 2024 - Built with Vue 3 + Go</p>
-      </div>
-    </footer>
-
     <!-- Toast container -->
-    <div class="toast toast-end" id="toast-container"></div>
+    <div class="toast toast-end z-[200]" id="toast-container"></div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 
+const router = useRouter()
 const authStore = useAuthStore()
+const uiStore = useUiStore()
 
-const toggleTheme = () => {
-  const html = document.documentElement
-  const current = html.getAttribute('data-theme')
-  html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light')
-}
+// Dark mode
+const isDark = ref(false)
 
+// Load theme preference on mount
 onMounted(() => {
   authStore.loadFromStorage()
+
+  // Load theme from localStorage or system preference
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme) {
+    isDark.value = savedTheme === 'dark'
+  } else {
+    // Check system preference
+    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
+  applyTheme()
 })
+
+// Watch for changes and save to localStorage
+watch(isDark, () => {
+  applyTheme()
+  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+})
+
+function applyTheme() {
+  const html = document.documentElement
+  if (isDark.value) {
+    html.setAttribute('data-theme', 'dark')
+  } else {
+    html.setAttribute('data-theme', 'light')
+  }
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+}
+
+const userInitial = computed(() => {
+  return authStore.user?.name?.charAt(0)?.toUpperCase() || '?'
+})
+
+async function handleLogout() {
+  await authStore.logout()
+  uiStore.success('À bientôt !')
+  router.push('/')
+}
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+:deep(.dropdown-content li a) {
+  border-radius: 0.75rem;
+}
+
+:deep(.dropdown-content li hr) {
+  margin: 0.25rem 0.5rem;
+}
+</style>

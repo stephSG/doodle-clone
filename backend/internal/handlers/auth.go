@@ -117,6 +117,17 @@ func (h *AuthHandler) deleteRefreshToken(token string) {
 }
 
 // Register handles user registration
+// @Summary      Inscription
+// @Description  Crée un nouveau compte avec email et mot de passe
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body models.CreateUserRequest true "Informations d'inscription"
+// @Success      201  {object}  models.AuthResponse
+// @Failure      400  {object}  map[string]string
+// @Failure      409  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -200,6 +211,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 // Login handles user login
+// @Summary      Connexion
+// @Description  Connecte un utilisateur avec email et mot de passe
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body models.LoginRequest true "Informations de connexion"
+// @Success      200  {object}  models.AuthResponse
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -278,6 +300,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 // Refresh handles token refresh
+// @Summary      Rafraîchir le token
+// @Description  Génère un nouveau access token à partir du refresh token (cookie httpOnly)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  models.AuthResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/refresh [post]
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	// Get refresh token from cookie
 	refreshToken, err := c.Cookie("refresh_token")
@@ -344,6 +375,13 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 }
 
 // Logout handles user logout
+// @Summary      Déconnexion
+// @Description  Déconnecte l'utilisateur et supprime le refresh token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Router       /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// Get refresh token from cookie
 	refreshToken, err := c.Cookie("refresh_token")
@@ -367,6 +405,16 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 }
 
 // GetMe returns the current user
+// @Summary      Obtenir l'utilisateur actuel
+// @Description  Retourne les informations de l'utilisateur connecté
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  models.User
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Router       /auth/me [get]
 func (h *AuthHandler) GetMe(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -392,6 +440,13 @@ func (h *AuthHandler) GetMe(c *gin.Context) {
 }
 
 // GoogleLogin initiates Google OAuth flow
+// @Summary      Connexion Google
+// @Description  Redirige vers Google pour l'authentification OAuth
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      302  {string}  string  "Redirect vers Google"
+// @Router       /auth/google/login [get]
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	// Generate state token for CSRF protection
 	state := generateStateToken()
@@ -407,6 +462,16 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 }
 
 // GoogleCallback handles Google OAuth callback
+// @Summary      Callback Google OAuth
+// @Description  Gère le retour de Google après authentification
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        state query string true "State token pour protection CSRF"
+// @Param        code query string true "Code d'autorisation Google"
+// @Success      302  {string}  string  "Redirect vers le frontend"
+// @Failure      400  {object}  map[string]string
+// @Router       /auth/google/callback [get]
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	// Verify state
 	state := c.Query("state")
@@ -524,6 +589,18 @@ func generateStateToken() string {
 }
 
 // UpdateProfile updates user profile
+// @Summary      Mettre à jour le profil
+// @Description  Met à jour le nom et l'email de l'utilisateur
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body models.UpdateProfileRequest true "Nouvelles informations"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      409  {object}  map[string]string
+// @Router       /auth/profile [put]
 func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -570,6 +647,18 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 }
 
 // ChangePassword changes user password
+// @Summary      Changer le mot de passe
+// @Description  Change le mot de passe de l'utilisateur
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body models.ChangePasswordRequest true "Ancien et nouveau mot de passe"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/password [put]
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {

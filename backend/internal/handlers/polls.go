@@ -31,6 +31,15 @@ func (h *PollHandler) SetNotificationHandler(nh *NotificationHandler) {
 }
 
 // ListPolls returns a list of public polls
+// @Summary      Lister les sondages
+// @Description  Retourne la liste des sondages publics
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Param        search query string false "Terme de recherche dans le titre"
+// @Success      200  {object}  map[string]interface{}  "polls, count"
+// @Failure      500  {object}  map[string]string
+// @Router       /polls [get]
 func (h *PollHandler) ListPolls(c *gin.Context) {
 	ctx, cancel := database.GetContext()
 	defer cancel()
@@ -109,6 +118,17 @@ func (h *PollHandler) ListPolls(c *gin.Context) {
 
 // GetPoll returns a single poll with all details
 // Supports both UUID and access_code as the ID parameter
+// @Summary      Obtenir un sondage
+// @Description  Retourne les détails d'un sondage (par UUID ou code d'accès)
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "UUID du sondage ou code d'accès"
+// @Success      200  {object}  map[string]interface{}  "poll, date_options, comments, votes"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id} [get]
 func (h *PollHandler) GetPoll(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -203,6 +223,18 @@ func (h *PollHandler) GetPoll(c *gin.Context) {
 }
 
 // CreatePoll creates a new poll
+// @Summary      Créer un sondage
+// @Description  Crée un nouveau sondage
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body models.CreatePollRequest true "Données du sondage"
+// @Success      201  {object}  models.Poll
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls [post]
 func (h *PollHandler) CreatePoll(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -288,6 +320,21 @@ func generateAccessCode() string {
 }
 
 // UpdatePoll updates an existing poll
+// @Summary      Mettre à jour un sondage
+// @Description  Met à jour un sondage existant (réservé au créateur)
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      string                      true  "UUID du sondage"
+// @Param        request body      models.UpdatePollRequest  true  "Champs à mettre à jour"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id} [put]
 func (h *PollHandler) UpdatePoll(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -377,6 +424,20 @@ func (h *PollHandler) UpdatePoll(c *gin.Context) {
 }
 
 // DeletePoll deletes a poll
+// @Summary      Supprimer un sondage
+// @Description  Supprime un sondage (réservé au créateur)
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      string  true  "UUID du sondage"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id} [delete]
 func (h *PollHandler) DeletePoll(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -421,6 +482,21 @@ func (h *PollHandler) DeletePoll(c *gin.Context) {
 }
 
 // SetFinalDate sets the final date for a poll
+// @Summary      Fixer la date finale
+// @Description  Fixe la date finale d'un sondage (réservé au créateur)
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      string                        true  "UUID du sondage"
+// @Param        request body      models.SetFinalDateRequest  true  "ID de l'option de date"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/final [post]
 func (h *PollHandler) SetFinalDate(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -488,6 +564,16 @@ func (h *PollHandler) SetFinalDate(c *gin.Context) {
 }
 
 // GetUserPolls returns polls created by the current user
+// @Summary      Mes sondages
+// @Description  Retourne la liste des sondages créés par l'utilisateur
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}  "polls, count"
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /user/polls [get]
 func (h *PollHandler) GetUserPolls(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -540,6 +626,20 @@ func (h *PollHandler) GetUserPolls(c *gin.Context) {
 }
 
 // AddDateOption adds a new date option to a poll
+// @Summary      Ajouter une option de date
+// @Description  Ajoute une nouvelle option de date à un sondage
+// @Tags         polls
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      string                        true  "UUID du sondage"
+// @Param        request body      models.AddDateOptionRequest  true  "Date et heure"
+// @Success      201  {object}  models.DateOption
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/dates [post]
 func (h *PollHandler) AddDateOption(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -697,12 +797,15 @@ func (h *PollHandler) getVotesWithUsers(ctx context.Context, pollID uuid.UUID) (
 		var userIDPtr *uuid.UUID
 		var avatar sql.NullString
 		var userName sql.NullString
+		var userID2 sql.NullString
+		var userName2 sql.NullString
 
 		err := rows.Scan(
 			&vote.ID, &vote.PollID, &vote.DateOptionID, &userID, &userName, &vote.Response, &vote.CreatedAt,
-			&vote.User.ID, &vote.User.Name, &avatar,
+			&userID2, &userName2, &avatar,
 		)
 		if err != nil {
+			log.Printf("Error scanning vote: %v", err)
 			continue
 		}
 
@@ -718,11 +821,15 @@ func (h *PollHandler) getVotesWithUsers(ctx context.Context, pollID uuid.UUID) (
 		vote.UserName = userName.String
 
 		// Only populate user fields if we have a user
-		if userIDPtr != nil {
+		if userIDPtr != nil && userID2.Valid {
+			uid, err := uuid.Parse(userID2.String)
+			if err == nil {
+				vote.User.ID = uid
+			}
+			vote.User.Name = userName2.String
 			if avatar.Valid {
 				vote.User.Avatar = avatar.String
 			}
-			vote.User.Name = userName.String
 		} else {
 			// Anonymous vote - clear user fields
 			vote.User.ID = uuid.Nil

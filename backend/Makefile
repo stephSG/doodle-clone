@@ -1,4 +1,4 @@
-.PHONY: help build run test test-cover lint fmt vet clean docker-build docker-run deps
+.PHONY: help build run test test-cover lint fmt vet clean docker-build docker-run deps swagger
 
 # Variables
 BINARY_NAME=doodle-clone
@@ -27,6 +27,9 @@ help:
 	@echo "  make test-cover    - Run tests with coverage"
 	@echo "  make test-race     - Run tests with race detection"
 	@echo "  make bench         - Run benchmarks"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  make swagger       - Generate Swagger documentation"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make fmt           - Format Go code"
@@ -223,7 +226,20 @@ install-tools:
 	@go install github.com/air-verse/air@latest
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@go install golang.org/x/tools/cmd/goimports@latest
+	@go install github.com/swaggo/swag/cmd/swag@latest
 	@echo "Tools installed:"
 	@echo "  air    - Hot reload for development"
 	@echo "  golangci-lint - Linter"
 	@echo "  goimports - Import management"
+	@echo "  swag   - Swagger documentation generator"
+
+# =============================================================================
+# Swagger Documentation
+# =============================================================================
+
+swagger:
+	@echo "Generating Swagger documentation..."
+	@which swag > /dev/null 2>&1 || (echo "Installing swag..." && go install github.com/swaggo/swag/cmd/swag@latest)
+	@swag init -g main.go -o docs
+	@echo "Swagger documentation generated at docs/"
+

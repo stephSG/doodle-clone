@@ -77,11 +77,11 @@ test:
 	@echo "Running tests..."
 	@npm run test || echo "No tests configured"
 
-test:watch:
+test-watch:
 	@echo "Running tests in watch mode..."
 	@npm run test:watch || echo "No tests configured"
 
-test:coverage:
+test-coverage:
 	@echo "Running tests with coverage..."
 	@npm run test:coverage || echo "No coverage configured"
 
@@ -93,7 +93,7 @@ lint:
 	@echo "Running ESLint..."
 	@npm run lint || echo "ESLint not configured"
 
-lint:fix:
+lint-fix:
 	@echo "Fixing ESLint errors..."
 	@npm run lint:fix || echo "ESLint not configured"
 
@@ -101,7 +101,7 @@ format:
 	@echo "Formatting code..."
 	@npm run format || echo "Prettier not configured"
 
-format:check:
+format-check:
 	@echo "Checking formatting..."
 	@npm run format:check || echo "Prettier not configured"
 
@@ -156,7 +156,7 @@ clean:
 	@rm -rf .vite
 	@rm -rf coverage
 
-clean:all: clean deps-clean
+clean-all: clean deps-clean
 
 # =============================================================================
 # Environment

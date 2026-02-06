@@ -1,167 +1,158 @@
 <template>
-  <div class="max-w-2xl mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="flex items-center gap-4 mb-8">
-      <button @click="$router.back()" class="btn btn-ghost btn-circle">
-        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <div>
-        <h1 class="text-2xl font-bold">{{ isEdit ? 'Modifier' : 'Créer' }} un sondage</h1>
-        <p class="text-sm text-base-content/60">Proposez des dates et laissez les participants voter</p>
-      </div>
-    </div>
+  <div class="min-h-screen max-w-md mx-auto shadow-[0_0_80px_rgba(0,0,0,0.03)] overflow-x-hidden relative transition-colors duration-300" :class="isDark ? 'bg-slate-900' : 'bg-white'">
+    <div class="p-6 pb-32 animate-in">
+      <!-- Header -->
+      <header class="flex justify-between items-center mb-10 mt-4">
+        <button @click="$router.back()" class="w-12 h-12 flex items-center justify-center rounded-2xl active:scale-90 transition-all border" :class="isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-50 text-slate-600 border-slate-100'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+        </button>
+        <h2 class="text-xl font-extrabold" :class="isDark ? 'text-white' : 'text-slate-900'">{{ isEdit ? 'Modifier' : 'Nouvel Event' }}</h2>
+        <div class="w-12 h-12"></div>
+      </header>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
-      <!-- Basic Info -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h2 class="card-title text-lg">Informations de base</h2>
+      <form @submit.prevent="handleSubmit" class="space-y-6">
+        <!-- Title -->
+        <div class="space-y-2">
+          <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest ml-1">Titre de l'événement</label>
+          <input
+            v-model="form.title"
+            type="text"
+            placeholder="Ex: Dîner de fin d'année"
+            class="w-full h-16 px-6 rounded-2xl outline-none transition-all font-bold border-2 border-transparent"
+            :class="[
+              isDark
+                ? 'bg-slate-800 text-white placeholder:text-slate-500 focus:bg-slate-700 focus:border-indigo-500'
+                : 'bg-slate-50 text-slate-700 placeholder:text-slate-300 focus:bg-white focus:border-indigo-100'
+            ]"
+            required
+          />
+        </div>
 
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Titre *</span>
-            </label>
+        <!-- Location -->
+        <div class="space-y-2">
+          <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest ml-1">Lieu</label>
+          <div class="relative">
+            <svg class="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" :class="isDark ? 'text-slate-500' : 'text-slate-300'">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            </svg>
             <input
-              v-model="form.title"
+              v-model="form.location"
               type="text"
-              placeholder="Ex: Réunion d'équipe, Dîner entre amis..."
-              class="input input-bordered"
-              required
+              placeholder="Ex: Paris ou Discord"
+              class="w-full h-16 pl-14 pr-6 rounded-2xl outline-none transition-all font-bold border-2 border-transparent"
+              :class="[
+                isDark
+                  ? 'bg-slate-800 text-white placeholder:text-slate-500 focus:bg-slate-700 focus:border-indigo-500'
+                  : 'bg-slate-50 text-slate-700 placeholder:text-slate-300 focus:bg-white focus:border-indigo-100'
+              ]"
             />
           </div>
-
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Description</span>
-            </label>
-            <textarea
-              v-model="form.description"
-              class="textarea textarea-bordered"
-              placeholder="Ajoutez plus de détails..."
-              rows="2"
-            ></textarea>
-          </div>
-
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">Lieu</span>
-            </label>
-            <div class="relative">
-              <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              </svg>
-              <input
-                v-model="form.location"
-                type="text"
-                placeholder="Ex: Paris, Zoom, En présentiel..."
-                class="input input-bordered pl-10"
-              />
-            </div>
-          </div>
         </div>
-      </div>
 
-      <!-- Options -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h2 class="card-title text-lg">Options</h2>
+        <!-- Description -->
+        <div class="space-y-2">
+          <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest ml-1">Description</label>
+          <textarea
+            v-model="form.description"
+            class="w-full min-h-24 px-6 py-4 rounded-2xl outline-none transition-all font-medium border-2 border-transparent resize-none"
+            :class="[
+              isDark
+                ? 'bg-slate-800 text-white placeholder:text-slate-500 focus:bg-slate-700 focus:border-indigo-500'
+                : 'bg-slate-50 text-slate-700 placeholder:text-slate-300 focus:bg-white focus:border-indigo-100'
+            ]"
+            placeholder="Ajoutez plus de détails..."
+          ></textarea>
+        </div>
 
+        <!-- Options -->
+        <div class="space-y-3">
+          <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest ml-1">Options</label>
           <div class="space-y-3">
-            <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-50 rounded-lg">
-              <input type="checkbox" v-model="form.allow_multiple" class="checkbox checkbox-primary" />
-              <div>
-                <span class="label-text font-medium">Votes multiples</span>
-                <span class="label-text-alt">Les participants peuvent voter pour plusieurs dates</span>
+            <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors">
+              <input type="checkbox" v-model="form.allow_multiple" class="w-5 h-5 rounded border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0" />
+              <div class="flex-1">
+                <span class="block font-bold text-slate-800 text-sm">Votes multiples</span>
+                <span class="block text-xs text-slate-400">Les participants peuvent voter pour plusieurs dates</span>
               </div>
             </label>
 
-            <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-50 rounded-lg">
-              <input type="checkbox" v-model="form.allow_maybe" class="checkbox checkbox-primary" />
-              <div>
-                <span class="label-text font-medium">Option "Peut-être"</span>
-                <span class="label-text-alt">Permet les réponses incertaines</span>
+            <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors">
+              <input type="checkbox" v-model="form.allow_maybe" class="w-5 h-5 rounded border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0" />
+              <div class="flex-1">
+                <span class="block font-bold text-slate-800 text-sm">Option "Peut-être"</span>
+                <span class="block text-xs text-slate-400">Permet les réponses incertaines</span>
               </div>
             </label>
 
-            <label class="label cursor-pointer justify-start gap-3 p-3 bg-base-50 rounded-lg">
-              <input type="checkbox" v-model="form.anonymous" class="checkbox checkbox-primary" />
-              <div>
-                <span class="label-text font-medium">Votes anonymes</span>
-                <span class="label-text-alt">Pas besoin de compte pour voter</span>
+            <label class="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl cursor-pointer hover:bg-indigo-50 transition-colors">
+              <input type="checkbox" v-model="form.anonymous" class="w-5 h-5 rounded border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0" />
+              <div class="flex-1">
+                <span class="block font-bold text-slate-800 text-sm">Votes anonymes</span>
+                <span class="block text-xs text-slate-400">Pas besoin de compte pour voter</span>
               </div>
             </label>
           </div>
         </div>
-      </div>
 
-      <!-- Dates -->
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h2 class="card-title text-lg">Dates proposées</h2>
-
-          <div class="space-y-4">
-            <div
-              v-for="(date, index) in form.dates"
-              :key="index"
-              class="p-4 bg-base-50 rounded-lg space-y-4"
+        <!-- Dates & Times -->
+        <div class="space-y-3">
+          <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest ml-1">Dates & Heures</label>
+          <div
+            v-for="(date, index) in form.dates"
+            :key="index"
+            class="flex gap-2 group animate-in"
+          >
+            <VueDatePicker
+              v-model="date.datetime"
+              :format="formatDateTimeDisplay"
+              :min-date="new Date()"
+              :teleport="true"
+              :enable-time-picker="true"
+              :is-24="true"
+              :minutes-increment="15"
+              :auto-apply="true"
+              :month-change-on-scroll="false"
+              :placeholder="index === 0 ? 'Sélectionnez date et heure' : ''"
+              class="dp-input-bordered flex-1"
             >
-              <div class="flex justify-between items-start">
-                <span class="text-sm font-medium">Date #{{ index + 1 }}</span>
-                <button
-                  v-if="form.dates.length > 1"
-                  type="button"
-                  @click="removeDate(index)"
-                  class="btn btn-sm btn-ghost btn-circle text-error"
-                >
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Date & Time Picker combined -->
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text text-xs">Date et heure *</span>
-                </label>
-                <VueDatePicker
-                  v-model="form.dates[index].datetime"
-                  :format="formatDateTime"
-                  :min-date="new Date()"
-                  :teleport="true"
-                  :enable-time-picker="true"
-                  :is-24="true"
-                  :minutes-increment="15"
-                  :auto-apply="true"
-                  :month-change-on-scroll="false"
-                  placeholder="Sélectionnez une date et heure"
-                  class="dp-input-bordered"
-                />
-              </div>
-            </div>
+              <template #input-icon>
+                <svg class="w-5 h-5 text-slate-300 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </template>
+            </VueDatePicker>
+            <button
+              v-if="form.dates.length > 1"
+              type="button"
+              @click="removeDate(index)"
+              class="w-16 h-16 flex items-center justify-center bg-rose-50 text-rose-500 rounded-2xl active:scale-90 transition-all shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"/>
+                <path d="m6 6 12 12"/>
+              </svg>
+            </button>
           </div>
-
           <button
             type="button"
             @click="addDate"
-            class="btn btn-outline w-full gap-2 mt-4"
+            class="w-full h-14 border-2 border-dashed border-slate-200 text-slate-400 rounded-2xl font-bold flex items-center justify-center gap-2 mt-2 hover:border-indigo-300 hover:text-indigo-500 transition-all"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
             </svg>
             Ajouter une date
           </button>
 
           <!-- Expiration -->
-          <div class="form-control mt-6">
-            <label class="label">
-              <span class="label-text font-medium">Date limite (optionnel)</span>
-            </label>
+          <div class="mt-4 space-y-2">
+            <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Date limite (optionnel)</label>
             <VueDatePicker
               v-model="expiresAt"
-              :format="formatDateTime"
+              :format="formatDateTimeDisplay"
               :min-date="new Date()"
               :teleport="true"
               :enable-time-picker="true"
@@ -170,32 +161,33 @@
               :auto-apply="true"
               :month-change-on-scroll="false"
               placeholder="Sélectionnez la date limite"
-              class="dp-input-bordered"
-            />
-            <span class="label-text-alt">Après cette date, les votes ne seront plus acceptés</span>
+              class="dp-input-bordered w-full"
+            >
+              <template #input-icon>
+                <svg class="w-5 h-5 text-slate-300 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </template>
+            </VueDatePicker>
           </div>
         </div>
-      </div>
+      </form>
 
-      <!-- Submit -->
-      <div class="flex gap-3">
+      <!-- Submit Button -->
+      <div class="fixed bottom-8 left-6 right-6 z-50 max-w-md mx-auto">
         <button
-          type="button"
-          @click="$router.back()"
-          class="btn btn-ghost flex-1"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary flex-1"
+          @click="handleSubmit"
           :disabled="loading || !isFormValid"
+          class="w-full bg-indigo-600 text-white h-16 rounded-2xl font-bold shadow-xl shadow-indigo-100 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none transition-all flex items-center justify-center gap-3 active:scale-95"
         >
-          <span v-if="loading" class="loading loading-spinner"></span>
-          {{ isEdit ? 'Modifier' : 'Créer' }} le sondage
+          <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+          <span v-else>{{ isEdit ? 'Modifier' : 'Publier le' }} sondage</span>
+          <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </template>
 
@@ -211,6 +203,9 @@ const router = useRouter()
 const route = useRoute()
 const pollsStore = usePollsStore()
 const uiStore = useUiStore()
+
+// Dark mode
+const isDark = computed(() => document.documentElement.getAttribute('data-theme') === 'dark')
 
 const isEdit = ref(false)
 const loading = ref(false)
@@ -234,13 +229,12 @@ const isFormValid = computed(() => {
          form.value.dates.some(d => d.datetime)
 })
 
-function formatDateTime(date) {
+function formatDateTimeDisplay(date) {
   if (!date) return ''
   return new Intl.DateTimeFormat('fr-FR', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   }).format(date)
@@ -292,6 +286,7 @@ async function handleSubmit() {
     if (isEdit.value) {
       await pollsStore.updatePoll(route.params.id, payload)
       uiStore.success('Sondage modifié !')
+      router.push(`/poll/${route.params.id}`)
     } else {
       const result = await pollsStore.createPoll(payload)
       uiStore.success('Sondage créé avec succès !')
@@ -335,89 +330,105 @@ onMounted(async () => {
       }
     } catch (error) {
       uiStore.error('Erreur lors du chargement du sondage')
-      router.push('/dashboard')
+      router.push('/')
     }
   }
 })
 </script>
 
-<style>
+<style scoped>
 .dp__main {
   border: none;
 }
 
-.dp__input {
+:deep(.dp__input) {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--fallback-bc, oklch(var(--bc) / 0.2));
-  background-color: var(--fallback-b1, oklch(var(--b1) / 1));
-  color: var(--fallback-bc, oklch(var(--bc) / 1));
-  font-size: 0.875rem;
-  transition: border-color 0.2s;
+  height: 4rem;
+  padding: 0 1.5rem 0 3rem;
+  border-radius: 1rem;
+  border: 2px solid transparent;
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.2s;
 }
 
-.dp__input:focus {
+:deep(.dp__input:focus) {
   outline: none;
-  border-color: var(--fallback-p, oklch(var(--p) / 1));
-  box-shadow: 0 0 0 2px var(--fallback-p, oklch(var(--p) / 0.2));
+  border-color: #e0e7ff;
+  background-color: white;
 }
 
-.dp__input::placeholder {
-  color: var(--fallback-bc, oklch(var(--bc) / 0.5));
+:deep(.dp__input::placeholder) {
+  color: #cbd5e1;
+  font-weight: 500;
 }
 
-.dp__menu {
-  border: 1px solid var(--fallback-bc, oklch(var(--bc) / 0.2));
-  border-radius: 0.75rem;
+:deep(.dp__menu) {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  font-family: inherit;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.dp__active_date {
-  background-color: var(--fallback-p, oklch(var(--p) / 1)) !important;
+:deep(.dp__active_date) {
+  background-color: #4f46e5 !important;
   color: white !important;
 }
 
-.dp__today {
-  border-color: var(--fallback-p, oklch(var(--p) / 1)) !important;
+:deep(.dp__today) {
+  border-color: #4f46e5 !important;
 }
 
-.dp__range_end, .dp__range_start, .dp__range_between {
-  background-color: var(--fallback-p, oklch(var(--p) / 0.9)) !important;
+:deep(.dp__range_end), :deep(.dp__range_start), :deep(.dp__range_between) {
+  background-color: #4f46e5 !important;
 }
 
-.dp__action_select {
-  background-color: var(--fallback-p, oklch(var(--p) / 1)) !important;
+:deep(.dp__action_select) {
+  background-color: #4f46e5 !important;
   color: white !important;
 }
 
-.dp__action_select:hover {
-  background-color: var(--fallback-p, oklch(var(--p) / 0.9)) !important;
+:deep(.dp__action_select:hover) {
+  background-color: #4338ca !important;
 }
 
-.dp__overlay_cell_active {
-  background-color: var(--fallback-p, oklch(var(--p) / 1)) !important;
+:deep(.dp__overlay_cell_active) {
+  background-color: #4f46e5 !important;
 }
 
-.dp__month_year_select {
+:deep(.dp__month_year_select) {
   font-weight: 600;
 }
 
-.dp__calendar_header_item {
+:deep(.dp__calendar_header_item) {
   font-weight: 500;
-  color: var(--fallback-bc, oklch(var(--bc) / 0.7));
+  color: #94a3b8;
 }
 
-.dp__time_display {
+:deep(.dp__time_display) {
   font-size: 1.1rem;
+}
+
+:deep(.dp__input_wrap) {
+  position: relative;
+}
+
+:deep(.dp__input_icon) {
+  left: 0;
 }
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
-  .dp__menu {
+  :deep(.dp__menu) {
     width: calc(100vw - 2rem) !important;
     max-width: none !important;
   }
+}
+
+:deep(*) {
+  -webkit-tap-highlight-color: transparent;
 }
 </style>

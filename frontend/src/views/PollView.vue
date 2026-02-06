@@ -89,8 +89,8 @@
             </div>
           </div>
 
-          <!-- Anonymous Name Input -->
-          <div v-if="!authStore.isAuthenticated" class="p-5 rounded-3xl border" :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'">
+          <!-- Anonymous Name Input (only in main content, not in fixed bar) -->
+          <div v-if="!authStore.isAuthenticated" class="p-5 rounded-3xl border mb-6" :class="isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'">
             <label class="text-[11px] font-black text-indigo-500 uppercase tracking-widest mb-2 block">Votre nom</label>
             <input
               v-model="anonymousName"
@@ -138,19 +138,19 @@
           </div>
 
           <!-- Submit Vote Button -->
-          <div class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent z-40">
+          <div class="fixed bottom-0 left-0 right-0 p-6 z-40" :class="isDark ? 'bg-slate-900/90 backdrop-blur-md' : 'bg-gradient-to-t from-white via-white to-transparent'">
             <div class="max-w-md mx-auto flex gap-3">
               <input
                 v-if="!authStore.isAuthenticated"
                 type="text"
                 v-model="anonymousName"
                 placeholder="Votre nom"
-                class="flex-1 bg-white border-2 border-slate-100 h-16 px-6 rounded-2xl shadow-2xl outline-none font-black text-slate-700 placeholder:text-slate-300 focus:border-indigo-100 transition-all"
+                :class="['flex-1 h-16 px-6 rounded-2xl shadow-2xl outline-none font-bold transition-all', isDark ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-indigo-500' : 'bg-white border-2 border-slate-100 text-slate-700 placeholder:text-slate-300 focus:border-indigo-100']"
               />
               <button
                 @click="submitVote"
                 :disabled="!canSubmitVote"
-                class="flex-1 h-16 px-8 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl disabled:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                :class="['flex-1 h-16 px-8 rounded-2xl font-black shadow-2xl disabled:opacity-50 active:scale-[0.97] transition-all flex items-center justify-center gap-2', canSubmitVote ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-300 text-slate-500']"
               >
                 <span v-if="loadingVote" class="loading loading-spinner loading-sm"></span>
                 <span v-else>{{ authStore.isAuthenticated ? 'Confirmer' : 'Voter' }}</span>

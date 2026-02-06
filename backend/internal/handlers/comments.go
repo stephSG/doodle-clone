@@ -21,6 +21,17 @@ func NewCommentHandler(db *pgxpool.Pool) *CommentHandler {
 }
 
 // GetComments returns all comments for a poll
+// @Summary      Lister les commentaires
+// @Description  Retourne tous les commentaires d'un sondage
+// @Tags         comments
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "UUID du sondage"
+// @Success      200  {object}  map[string]interface{}  "comments, count"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/comments [get]
 func (h *CommentHandler) GetComments(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -76,6 +87,20 @@ func (h *CommentHandler) GetComments(c *gin.Context) {
 }
 
 // CreateComment creates a new comment
+// @Summary      Créer un commentaire
+// @Description  Ajoute un commentaire à un sondage
+// @Tags         comments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      string                        true  "UUID du sondage"
+// @Param        request body      models.CreateCommentRequest  true  "Contenu du commentaire"
+// @Success      201  {object}  models.CommentWithUser
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/comments [post]
 func (h *CommentHandler) CreateComment(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -140,6 +165,22 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 }
 
 // UpdateComment updates an existing comment
+// @Summary      Mettre à jour un commentaire
+// @Description  Modifie un commentaire existant
+// @Tags         comments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id        path      string                        true  "UUID du sondage"
+// @Param        commentId path      string                        true  "UUID du commentaire"
+// @Param        request body      models.UpdateCommentRequest  true  "Nouveau contenu"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/comments/{commentId} [put]
 func (h *CommentHandler) UpdateComment(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {
@@ -199,6 +240,21 @@ func (h *CommentHandler) UpdateComment(c *gin.Context) {
 }
 
 // DeleteComment deletes a comment
+// @Summary      Supprimer un commentaire
+// @Description  Supprime un commentaire existant
+// @Tags         comments
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id        path      string  true  "UUID du sondage"
+// @Param        commentId path      string  true  "UUID du commentaire"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/comments/{commentId} [delete]
 func (h *CommentHandler) DeleteComment(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {

@@ -22,6 +22,17 @@ func NewVoteHandler(db *pgxpool.Pool) *VoteHandler {
 }
 
 // GetVotes returns all votes for a poll
+// @Summary      Lister les votes
+// @Description  Retourne tous les votes d'un sondage
+// @Tags         votes
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "UUID du sondage ou code d'accès"
+// @Success      200  {object}  map[string]interface{}  "votes_by_user, anonymous_votes, poll"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/votes [get]
 func (h *VoteHandler) GetVotes(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -98,6 +109,18 @@ func (h *VoteHandler) GetVotes(c *gin.Context) {
 }
 
 // CreateVote creates a new vote
+// @Summary      Voter
+// @Description  Enregistre un vote pour un sondage (authentification optionnelle pour anonymes)
+// @Tags         votes
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string                   true  "UUID du sondage ou code d'accès"
+// @Param        request body      models.CreateVoteRequest true  "Votes et nom utilisateur"
+// @Success      201  {object}  map[string]interface{}  "votes, message"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/vote [post]
 func (h *VoteHandler) CreateVote(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -280,6 +303,22 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 }
 
 // UpdateVote updates an existing vote
+// @Summary      Mettre à jour un vote
+// @Description  Modifie un vote existant
+// @Tags         votes
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id      path      string                    true  "UUID du sondage"
+// @Param        voteId  path      string                    true  "UUID du vote"
+// @Param        request body      models.UpdateVoteRequest  true  "Nouvelle réponse"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/votes/{voteId} [put]
 func (h *VoteHandler) UpdateVote(c *gin.Context) {
 	pollID := c.Param("id")
 	voteID := c.Param("voteId")
@@ -349,6 +388,21 @@ func (h *VoteHandler) UpdateVote(c *gin.Context) {
 }
 
 // DeleteVote deletes a vote
+// @Summary      Supprimer un vote
+// @Description  Supprime un vote existant
+// @Tags         votes
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id     path      string  true  "UUID du sondage"
+// @Param        voteId path      string  true  "UUID du vote"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/votes/{voteId} [delete]
 func (h *VoteHandler) DeleteVote(c *gin.Context) {
 	pollID := c.Param("id")
 	voteID := c.Param("voteId")
@@ -402,6 +456,16 @@ func (h *VoteHandler) DeleteVote(c *gin.Context) {
 }
 
 // GetUserVotes returns votes made by the current user
+// @Summary      Mes votes
+// @Description  Retourne la liste des votes de l'utilisateur
+// @Tags         votes
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}  "votes, count"
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /user/votes [get]
 func (h *VoteHandler) GetUserVotes(c *gin.Context) {
 	userID := middleware.GetCurrentUser(c)
 	if userID == nil {

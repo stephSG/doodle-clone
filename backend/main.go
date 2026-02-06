@@ -9,13 +9,38 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"doodle-clone/internal/config"
 	"doodle-clone/internal/database"
 	"doodle-clone/internal/email"
 	"doodle-clone/internal/handlers"
 	"doodle-clone/internal/middleware"
 	"doodle-clone/internal/models"
+
+	_ "doodle-clone/docs"
 )
+
+// @title           Doodle Clone API
+// @version         1.0
+// @description     Application de sondage de dates type Doodle avec authentification Google OAuth et email/password.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   Stéphane LE MINH NHUT
+// @contact.url    https://github.com
+// @contact.email  support@example.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	// Load configuration
@@ -60,6 +85,9 @@ func main() {
 			"environment": config.AppConfig.Environment,
 		})
 	})
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Create handlers
 	authHandler := handlers.NewAuthHandler(database.Pool)

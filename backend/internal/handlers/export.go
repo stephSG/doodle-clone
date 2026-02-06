@@ -24,6 +24,16 @@ func NewExportHandler(db *pgxpool.Pool) *ExportHandler {
 }
 
 // ExportPDF generates a PDF export of a poll
+// @Summary      Exporter en PDF
+// @Description  Génère un fichier PDF du sondage avec les résultats
+// @Tags         exports
+// @Accept       json
+// @Produce      application/pdf
+// @Param        id   path      string  true  "UUID du sondage"
+// @Success      200  {file}  file
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/export/pdf [get]
 func (h *ExportHandler) ExportPDF(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -136,6 +146,16 @@ func (h *ExportHandler) ExportPDF(c *gin.Context) {
 }
 
 // ExportICS generates an ICS calendar file for a poll
+// @Summary      Exporter en ICS
+// @Description  Génère un fichier calendrier (Google Calendar, Outlook)
+// @Tags         exports
+// @Accept       json
+// @Produce      text/calendar
+// @Param        id   path      string  true  "UUID du sondage"
+// @Success      200  {file}  file
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/export/ics [get]
 func (h *ExportHandler) ExportICS(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -202,6 +222,16 @@ func (h *ExportHandler) ExportICS(c *gin.Context) {
 }
 
 // ExportCSV generates a CSV export of votes
+// @Summary      Exporter en CSV
+// @Description  Génère un fichier CSV des votes pour analyse
+// @Tags         exports
+// @Accept       json
+// @Produce      text/csv
+// @Param        id   path      string  true  "UUID du sondage"
+// @Success      200  {file}  file
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /polls/{id}/export/csv [get]
 func (h *ExportHandler) ExportCSV(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {

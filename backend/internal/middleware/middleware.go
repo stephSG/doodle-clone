@@ -256,3 +256,9 @@ func ErrorHandler() gin.HandlerFunc {
 		}
 	}
 }
+
+// GenerateToken creates a JWT token for testing purposes
+func GenerateToken(claims Claims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(config.AppConfig.JWTSecret))
+}
