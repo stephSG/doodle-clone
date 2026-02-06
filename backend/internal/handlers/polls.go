@@ -822,20 +822,19 @@ func (h *PollHandler) getVotesWithUsers(ctx context.Context, pollID uuid.UUID) (
 
 		// Only populate user fields if we have a user
 		if userIDPtr != nil && userID2.Valid {
+			// Initialize User struct
+			user := models.User{}
 			uid, err := uuid.Parse(userID2.String)
 			if err == nil {
-				vote.User.ID = uid
+				user.ID = uid
 			}
-			vote.User.Name = userName2.String
+			user.Name = userName2.String
 			if avatar.Valid {
-				vote.User.Avatar = avatar.String
+				user.Avatar = avatar.String
 			}
-		} else {
-			// Anonymous vote - clear user fields
-			vote.User.ID = uuid.Nil
-			vote.User.Name = ""
-			vote.User.Avatar = ""
+			vote.User = &user
 		}
+		// If no user, vote.User remains nil (which is correct for anonymous votes)
 
 		votes = append(votes, vote)
 	}
