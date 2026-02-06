@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -211,16 +212,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// Get user
 	var user models.User
+	var avatar sql.NullString
 	err := h.db.QueryRow(ctx, `
 		SELECT id, email, password_hash, name, avatar, provider, created_at, updated_at
 		FROM users WHERE email = $1
-	`, req.Email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Avatar, &user.Provider, &user.CreatedAt, &user.UpdatedAt)
+	`, req.Email).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Name, &avatar, &user.Provider, &user.CreatedAt, &user.UpdatedAt)
+	if avatar.Valid {
+		user.Avatar = avatar.String
+	}
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
+		log.Printf("Login DB error for email %s: %v", req.Email, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}

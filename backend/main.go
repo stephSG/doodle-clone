@@ -1,16 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"doodle-clone/internal/config"
 	"doodle-clone/internal/database"
+	"doodle-clone/internal/email"
 	"doodle-clone/internal/handlers"
 	"doodle-clone/internal/middleware"
+	"doodle-clone/internal/models"
 )
 
 func main() {
@@ -36,6 +40,9 @@ func main() {
 		// Don't exit - maybe tables already exist
 	}
 
+	// Initialize default notification settings
+	initNotificationSettings()
+
 	// Create router
 	r := gin.Default()
 
@@ -60,6 +67,17 @@ func main() {
 	voteHandler := handlers.NewVoteHandler(database.Pool)
 	commentHandler := handlers.NewCommentHandler(database.Pool)
 	exportHandler := handlers.NewExportHandler(database.Pool)
+
+	// Create email sender
+	emailSender := email.NewSender()
+
+	// Create notification handler and start background worker
+	notificationHandler := handlers.NewNotificationHandler(database.Pool, emailSender)
+	notificationHandler.StartBackgroundWorker()
+	defer notificationHandler.StopBackgroundWorker()
+
+	// Link notification handler to poll handler
+	pollHandler.SetNotificationHandler(notificationHandler)
 
 	// Google OAuth routes (without /api prefix for compatibility)
 	google := r.Group("/auth")
@@ -122,6 +140,10 @@ func main() {
 			// User dashboard
 			protected.GET("/user/polls", pollHandler.GetUserPolls)
 			protected.GET("/user/votes", voteHandler.GetUserVotes)
+
+			// Notification settings (admin only)
+			protected.GET("/notifications/settings", notificationHandler.GetNotificationSettings)
+			protected.PUT("/notifications/settings", notificationHandler.UpdateNotificationSetting)
 		}
 
 		// Routes that support optional auth (can work with or without login)
@@ -180,4 +202,48 @@ func GetPort() string {
 		port = "8080"
 	}
 	return fmt.Sprintf(":%s", port)
+}
+
+// initNotificationSettings initializes default notification settings
+func initNotificationSettings() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	defaultSettings := map[string]string{
+		models.SettingReminderEnabled:   "true",
+		models.SettingReminderHours:     "1",
+		models.SettingNewVoteEnabled:    "false",
+		models.SettingNewCommentEnabled: "false",
+		models.SettingFinalDateEnabled:  "true",
+	}
+
+	for key, value := range defaultSettings {
+		// Check if setting exists
+		var exists bool
+		err := database.Pool.QueryRow(ctx, `
+			SELECT EXISTS(SELECT 1 FROM notification_settings WHERE key = $1)
+		`, key).Scan(&exists)
+
+		if err == nil && !exists {
+			database.Pool.Exec(ctx, `
+				INSERT INTO notification_settings (key, value, description)
+				VALUES ($1, $2, $3)
+			`, key, value, getDescriptionForKey(key))
+			log.Printf("Initialized notification setting: %s = %s", key, value)
+		}
+	}
+}
+
+func getDescriptionForKey(key string) string {
+	descriptions := map[string]string{
+		models.SettingReminderEnabled:   "Enable reminder notifications before events",
+		models.SettingReminderHours:     "Hours before event to send reminder",
+		models.SettingNewVoteEnabled:    "Enable notifications when someone votes",
+		models.SettingNewCommentEnabled: "Enable notifications when someone comments",
+		models.SettingFinalDateEnabled:  "Enable notifications when final date is set",
+	}
+	if desc, ok := descriptions[key]; ok {
+		return desc
+	}
+	return ""
 }

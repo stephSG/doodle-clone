@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -159,6 +160,7 @@ func GetCurrentUser(c *gin.Context) *uuid.UUID {
 
 // RateLimiter is a simple in-memory rate limiter
 type RateLimiter struct {
+	mu       sync.RWMutex
 	visitors map[string][]time.Time
 	limit    int
 	window   time.Duration
@@ -175,6 +177,9 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 
 // Allow checks if the request is allowed
 func (rl *RateLimiter) Allow(ip string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
 	now := time.Now()
 
 	// Clean old entries

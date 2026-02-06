@@ -106,3 +106,36 @@ func createRefreshTokensTable() string {
 	CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 	`
 }
+
+func createNotificationSettingsTable() string {
+	return `
+	CREATE TABLE IF NOT EXISTS notification_settings (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		key VARCHAR(100) UNIQUE NOT NULL,
+		value TEXT NOT NULL,
+		description TEXT,
+		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+	`
+}
+
+func createNotificationsTable() string {
+	return `
+	CREATE TABLE IF NOT EXISTS notifications (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+		user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+		type VARCHAR(50) NOT NULL,
+		status VARCHAR(20) NOT NULL DEFAULT 'pending',
+		scheduled_at TIMESTAMP WITH TIME ZONE NOT NULL,
+		sent_at TIMESTAMP WITH TIME ZONE,
+		error_message TEXT,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_notifications_poll ON notifications(poll_id);
+	CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+	CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
+	CREATE INDEX IF NOT EXISTS idx_notifications_scheduled ON notifications(scheduled_at);
+	`
+}

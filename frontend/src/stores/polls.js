@@ -98,10 +98,12 @@ export const usePollsStore = defineStore('polls', () => {
     }
   }
 
-  async function vote(pollId, votes) {
+  async function vote(pollId, votes, userName = null) {
     loading.value = true
     try {
-      const response = await api.post(`/api/polls/${pollId}/votes`, { votes })
+      const payload = userName ? { votes, user_name: userName } : { votes }
+      // Use /vote endpoint (singular) which supports optional auth for anonymous voting
+      const response = await api.post(`/api/polls/${pollId}/vote`, payload)
       await fetchPoll(pollId) // Refresh poll data
       return response.data
     } catch (error) {

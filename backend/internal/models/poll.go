@@ -14,6 +14,7 @@ type Poll struct {
 	Location        string     `json:"location" db:"location"`
 	CreatorID       uuid.UUID  `json:"creator_id" db:"creator_id"`
 	Creator         *User      `json:"creator,omitempty" db:"-"` // Populated by join
+	AccessCode      string     `json:"access_code" db:"access_code"` // Unique code to access private poll
 	ExpiresAt       *time.Time `json:"expires_at" db:"expires_at"`
 	AllowMultiple   bool       `json:"allow_multiple" db:"allow_multiple"`   // Allow voting for multiple dates
 	AllowMaybe      bool       `json:"allow_maybe" db:"allow_maybe"`         // Allow "maybe" response

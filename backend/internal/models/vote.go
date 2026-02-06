@@ -26,6 +26,7 @@ func (Vote) TableName() string {
 type CreateVoteRequest struct {
 	Response string     `json:"response" binding:"omitempty,oneof=yes no maybe"` // For single vote with date_option_id query param
 	Votes    []VoteItem `json:"votes"` // For multiple votes at once
+	UserName string     `json:"user_name"` // Name for anonymous voting
 }
 
 // VoteItem represents a single vote item

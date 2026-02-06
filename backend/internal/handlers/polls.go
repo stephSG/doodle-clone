@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"database/sql"
 	"log"
+	"math/big"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,11 +18,16 @@ import (
 )
 
 type PollHandler struct {
-	db *pgxpool.Pool
+	db                  *pgxpool.Pool
+	notificationHandler *NotificationHandler
 }
 
 func NewPollHandler(db *pgxpool.Pool) *PollHandler {
 	return &PollHandler{db: db}
+}
+
+func (h *PollHandler) SetNotificationHandler(nh *NotificationHandler) {
+	h.notificationHandler = nh
 }
 
 // ListPolls returns a list of public polls
@@ -34,7 +42,7 @@ func (h *PollHandler) ListPolls(c *gin.Context) {
 
 	// Build query
 	query := `
-		SELECT p.id, p.title, p.description, p.location, p.creator_id, p.expires_at,
+		SELECT p.id, p.title, p.description, p.location, p.creator_id, p.access_code, p.expires_at,
 		       p.allow_multiple, p.allow_maybe, p.anonymous, p.limit_votes, p.max_votes_per_user,
 		       p.final_date, p.created_at, p.updated_at,
 		       u.id, u.name, u.avatar,
@@ -54,7 +62,7 @@ func (h *PollHandler) ListPolls(c *gin.Context) {
 		argCount++
 	}
 
-	query += ` GROUP BY p.id, p.title, p.description, p.location, p.creator_id, p.expires_at,
+	query += ` GROUP BY p.id, p.title, p.description, p.location, p.creator_id, p.access_code, p.expires_at,
 	                    p.allow_multiple, p.allow_maybe, p.anonymous, p.limit_votes, p.max_votes_per_user,
 	                    p.final_date, p.created_at, p.updated_at, u.id, u.name, u.avatar
 	            ORDER BY p.created_at DESC LIMIT $` + string(rune('0'+argCount)) + " OFFSET $" + string(rune('0'+argCount+1))
@@ -71,17 +79,22 @@ func (h *PollHandler) ListPolls(c *gin.Context) {
 	for rows.Next() {
 		var poll models.Poll
 		var creator models.User
+		var avatar sql.NullString
 		var participantCount int
 
 		err := rows.Scan(
-			&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.ExpiresAt,
+			&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.AccessCode, &poll.ExpiresAt,
 			&poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous, &poll.LimitVotes, &poll.MaxVotesPerUser,
 			&poll.FinalDate, &poll.CreatedAt, &poll.UpdatedAt,
-			&creator.ID, &creator.Name, &creator.Avatar,
+			&creator.ID, &creator.Name, &avatar,
 			&participantCount,
 		)
 		if err != nil {
+			log.Printf("Error scanning poll: %v", err)
 			continue
+		}
+		if avatar.Valid {
+			creator.Avatar = avatar.String
 		}
 
 		poll.Creator = &creator
@@ -95,6 +108,7 @@ func (h *PollHandler) ListPolls(c *gin.Context) {
 }
 
 // GetPoll returns a single poll with all details
+// Supports both UUID and access_code as the ID parameter
 func (h *PollHandler) GetPoll(c *gin.Context) {
 	pollID := c.Param("id")
 	if pollID == "" {
@@ -105,12 +119,14 @@ func (h *PollHandler) GetPoll(c *gin.Context) {
 	ctx, cancel := database.GetContext()
 	defer cancel()
 
-	// Get poll with creator info
+	// Get poll with creator info - try by UUID first, then by access_code
 	var poll models.Poll
 	var creator models.User
+	var creatorAvatar sql.NullString
 
+	// First try to find by UUID
 	err := h.db.QueryRow(ctx, `
-		SELECT p.id, p.title, p.description, p.location, p.creator_id, p.expires_at,
+		SELECT p.id, p.title, p.description, p.location, p.creator_id, p.access_code, p.expires_at,
 		       p.allow_multiple, p.allow_maybe, p.anonymous, p.limit_votes, p.max_votes_per_user,
 		       p.final_date, p.created_at, p.updated_at,
 		       u.id, u.name, u.avatar, u.email
@@ -118,19 +134,42 @@ func (h *PollHandler) GetPoll(c *gin.Context) {
 		LEFT JOIN users u ON p.creator_id = u.id
 		WHERE p.id = $1
 	`, pollID).Scan(
-		&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.ExpiresAt,
+		&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.AccessCode, &poll.ExpiresAt,
 		&poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous, &poll.LimitVotes, &poll.MaxVotesPerUser,
 		&poll.FinalDate, &poll.CreatedAt, &poll.UpdatedAt,
-		&creator.ID, &creator.Name, &creator.Avatar, &creator.Email,
+		&creator.ID, &creator.Name, &creatorAvatar, &creator.Email,
 	)
+
+	// If not found by UUID, try by access_code
+	if err != nil {
+		err = h.db.QueryRow(ctx, `
+			SELECT p.id, p.title, p.description, p.location, p.creator_id, p.access_code, p.expires_at,
+			       p.allow_multiple, p.allow_maybe, p.anonymous, p.limit_votes, p.max_votes_per_user,
+			       p.final_date, p.created_at, p.updated_at,
+			       u.id, u.name, u.avatar, u.email
+			FROM polls p
+			LEFT JOIN users u ON p.creator_id = u.id
+			WHERE p.access_code = $1
+		`, pollID).Scan(
+			&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.AccessCode, &poll.ExpiresAt,
+			&poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous, &poll.LimitVotes, &poll.MaxVotesPerUser,
+			&poll.FinalDate, &poll.CreatedAt, &poll.UpdatedAt,
+			&creator.ID, &creator.Name, &creatorAvatar, &creator.Email,
+		)
+	}
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Poll not found"})
 			return
 		}
+		log.Printf("Error fetching poll: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch poll"})
 		return
+	}
+
+	if creatorAvatar.Valid {
+		creator.Avatar = creatorAvatar.String
 	}
 
 	poll.Creator = &creator
@@ -149,10 +188,17 @@ func (h *PollHandler) GetPoll(c *gin.Context) {
 		comments = []models.CommentWithUser{}
 	}
 
+	// Get votes with user info
+	votes, err := h.getVotesWithUsers(ctx, poll.ID)
+	if err != nil {
+		votes = []models.VoteWithUser{}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"poll":         poll,
 		"date_options": dateOptions,
 		"comments":     comments,
+		"votes":        votes,
 	})
 }
 
@@ -173,13 +219,24 @@ func (h *PollHandler) CreatePoll(c *gin.Context) {
 	ctx, cancel := database.GetContext()
 	defer cancel()
 
+	// Generate unique access code
+	accessCode := generateAccessCode()
+	for {
+		var exists bool
+		err := h.db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM polls WHERE access_code = $1)", accessCode).Scan(&exists)
+		if err != nil || !exists {
+			break
+		}
+		accessCode = generateAccessCode()
+	}
+
 	// Create poll
 	pollID := uuid.New()
 	_, err := h.db.Exec(ctx, `
-		INSERT INTO polls (id, title, description, location, creator_id, expires_at,
+		INSERT INTO polls (id, title, description, location, creator_id, access_code, expires_at,
 		                  allow_multiple, allow_maybe, anonymous, limit_votes, max_votes_per_user)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-	`, pollID, req.Title, req.Description, req.Location, *userID, req.ExpiresAt,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`, pollID, req.Title, req.Description, req.Location, *userID, accessCode, req.ExpiresAt,
 		req.AllowMultiple, req.AllowMaybe, req.Anonymous, req.LimitVotes, req.MaxVotesPerUser)
 
 	if err != nil {
@@ -203,11 +260,11 @@ func (h *PollHandler) CreatePoll(c *gin.Context) {
 	// Get created poll
 	var poll models.Poll
 	err = h.db.QueryRow(ctx, `
-		SELECT id, title, description, location, creator_id, expires_at,
+		SELECT id, title, description, location, creator_id, access_code, expires_at,
 		       allow_multiple, allow_maybe, anonymous, limit_votes, max_votes_per_user,
 		       final_date, created_at, updated_at
 		FROM polls WHERE id = $1
-	`, pollID).Scan(&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.ExpiresAt,
+	`, pollID).Scan(&poll.ID, &poll.Title, &poll.Description, &poll.Location, &poll.CreatorID, &poll.AccessCode, &poll.ExpiresAt,
 		&poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous, &poll.LimitVotes, &poll.MaxVotesPerUser,
 		&poll.FinalDate, &poll.CreatedAt, &poll.UpdatedAt)
 
@@ -217,6 +274,17 @@ func (h *PollHandler) CreatePoll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, poll)
+}
+
+// generateAccessCode generates a random 8-character access code
+func generateAccessCode() string {
+	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // No confusing chars like I, O, 0, 1
+	b := make([]byte, 8)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		b[i] = charset[n.Int64()]
+	}
+	return string(b)
 }
 
 // UpdatePoll updates an existing poll
@@ -410,6 +478,12 @@ func (h *PollHandler) SetFinalDate(c *gin.Context) {
 		return
 	}
 
+	// Schedule reminder notifications
+	if h.notificationHandler != nil {
+		pollUUID, _ := uuid.Parse(pollID)
+		go h.notificationHandler.ScheduleReminderForPoll(pollUUID)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Final date set successfully"})
 }
 
@@ -599,4 +673,65 @@ func (h *PollHandler) getComments(ctx context.Context, pollID uuid.UUID) ([]mode
 	}
 
 	return comments, nil
+}
+
+func (h *PollHandler) getVotesWithUsers(ctx context.Context, pollID uuid.UUID) ([]models.VoteWithUser, error) {
+	rows, err := h.db.Query(ctx, `
+		SELECT v.id, v.poll_id, v.date_option_id, v.user_id, v.user_name, v.response, v.created_at,
+		       u.id, u.name, u.avatar
+		FROM votes v
+		LEFT JOIN users u ON v.user_id = u.id
+		WHERE v.poll_id = $1
+		ORDER BY v.created_at DESC
+	`, pollID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var votes []models.VoteWithUser
+	for rows.Next() {
+		var vote models.VoteWithUser
+		var userID sql.NullString
+		var userIDPtr *uuid.UUID
+		var avatar sql.NullString
+		var userName sql.NullString
+
+		err := rows.Scan(
+			&vote.ID, &vote.PollID, &vote.DateOptionID, &userID, &userName, &vote.Response, &vote.CreatedAt,
+			&vote.User.ID, &vote.User.Name, &avatar,
+		)
+		if err != nil {
+			continue
+		}
+
+		// Handle nullable user_id for anonymous votes
+		if userID.Valid {
+			uid, err := uuid.Parse(userID.String)
+			if err == nil {
+				userIDPtr = &uid
+			}
+		}
+
+		vote.UserID = userIDPtr
+		vote.UserName = userName.String
+
+		// Only populate user fields if we have a user
+		if userIDPtr != nil {
+			if avatar.Valid {
+				vote.User.Avatar = avatar.String
+			}
+			vote.User.Name = userName.String
+		} else {
+			// Anonymous vote - clear user fields
+			vote.User.ID = uuid.Nil
+			vote.User.Name = ""
+			vote.User.Avatar = ""
+		}
+
+		votes = append(votes, vote)
+	}
+
+	return votes, nil
 }

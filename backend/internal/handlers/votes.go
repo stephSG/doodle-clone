@@ -120,11 +120,23 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 	var poll models.Poll
 	var creatorID uuid.UUID
 	log.Printf("Fetching poll info for: %s", pollID)
+
+	// Try by UUID first, then by access_code
 	err := h.db.QueryRow(ctx, `
 		SELECT id, title, allow_multiple, allow_maybe, anonymous, limit_votes, max_votes_per_user, creator_id, expires_at
 		FROM polls WHERE id = $1
 	`, pollID).Scan(&poll.ID, &poll.Title, &poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous,
 		&poll.LimitVotes, &poll.MaxVotesPerUser, &creatorID, &poll.ExpiresAt)
+
+	// If not found by UUID, try by access_code
+	if err != nil {
+		err = h.db.QueryRow(ctx, `
+			SELECT id, title, allow_multiple, allow_maybe, anonymous, limit_votes, max_votes_per_user, creator_id, expires_at
+			FROM polls WHERE access_code = $1
+		`, pollID).Scan(&poll.ID, &poll.Title, &poll.AllowMultiple, &poll.AllowMaybe, &poll.Anonymous,
+			&poll.LimitVotes, &poll.MaxVotesPerUser, &creatorID, &poll.ExpiresAt)
+	}
+
 	if err != nil {
 		log.Printf("Error fetching poll: %v", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Poll not found"})
@@ -158,15 +170,11 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 		}
 		userIDPtr = userID
 	} else {
-		// Anonymous user
-		if !poll.Anonymous {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "You must be logged in to vote on this poll"})
-			return
-		}
-		// For anonymous, require a name
-		if req.Votes == nil || len(req.Votes) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user_name is required for anonymous votes"})
-			return
+		// Anonymous user - use provided name or default
+		if req.UserName != "" {
+			userName = req.UserName
+		} else {
+			userName = "Anonymous"
 		}
 	}
 
@@ -193,11 +201,11 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 
 	// Validate votes
 	for _, voteItem := range votesToCreate {
-		// Check if date option exists
+		// Check if date option exists (use poll.ID which is the resolved UUID)
 		var exists bool
 		err = h.db.QueryRow(ctx, `
 			SELECT EXISTS(SELECT 1 FROM date_options WHERE id = $1 AND poll_id = $2)
-		`, voteItem.DateOptionID, pollID).Scan(&exists)
+		`, voteItem.DateOptionID, poll.ID).Scan(&exists)
 
 		if err != nil || !exists {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date option"})
@@ -217,7 +225,7 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 		var existingVoteCount int
 		err = h.db.QueryRow(ctx, `
 			SELECT COUNT(*) FROM votes WHERE poll_id = $1 AND user_id = $2
-		`, pollID, *userID).Scan(&existingVoteCount)
+		`, poll.ID, *userID).Scan(&existingVoteCount)
 
 		if err == nil && existingVoteCount+len(votesToCreate) > poll.MaxVotesPerUser {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -240,14 +248,14 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 		}
 
 		log.Printf("Creating vote: pollID=%s, dateOptionID=%s, userID=%v, displayName=%s, response=%s",
-			pollID, voteItem.DateOptionID, userIDPtr, displayName, voteItem.Response)
+			poll.ID, voteItem.DateOptionID, userIDPtr, displayName, voteItem.Response)
 
 		_, err = h.db.Exec(ctx, `
 			INSERT INTO votes (id, poll_id, date_option_id, user_id, user_name, response)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT (poll_id, date_option_id, user_id)
 			DO UPDATE SET response = $6, user_name = $5
-		`, voteID, pollID, voteItem.DateOptionID, userIDPtr, displayName, voteItem.Response)
+		`, voteID, poll.ID, voteItem.DateOptionID, userIDPtr, displayName, voteItem.Response)
 
 		if err != nil {
 			log.Printf("Error creating vote: %v", err)
@@ -257,7 +265,7 @@ func (h *VoteHandler) CreateVote(c *gin.Context) {
 
 		createdVotes = append(createdVotes, models.Vote{
 			ID:          voteID,
-			PollID:      uuid.MustParse(pollID),
+			PollID:      poll.ID,
 			DateOptionID: voteItem.DateOptionID,
 			UserID:      userIDPtr,
 			UserName:    displayName,
@@ -406,10 +414,10 @@ func (h *VoteHandler) GetUserVotes(c *gin.Context) {
 
 	rows, err := h.db.Query(ctx, `
 		SELECT v.id, v.poll_id, v.date_option_id, v.response, v.created_at,
-		       p.title, p.location, p.expires_at, do.start_time
+		       p.title, p.location, p.expires_at, d.start_time
 		FROM votes v
 		JOIN polls p ON v.poll_id = p.id
-		JOIN date_options do ON v.date_option_id = do.id
+		JOIN date_options d ON v.date_option_id = d.id
 		WHERE v.user_id = $1
 		ORDER BY v.created_at DESC
 	`, *userID)
