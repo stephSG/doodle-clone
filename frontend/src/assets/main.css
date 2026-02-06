@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --font-sans: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  @apply bg-base-100 text-base-content;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-base-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-base-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-neutral;
+}
+
+/* Vote matrix styles */
+.vote-matrix {
+  @apply overflow-x-auto;
+}
+
+.vote-cell {
+  @apply w-12 h-12 min-w-12 flex items-center justify-center cursor-pointer transition-all duration-200;
+  @apply hover:scale-110 active:scale-95;
+}
+
+.vote-cell.yes {
+  @apply bg-success text-success-content;
+}
+
+.vote-cell.no {
+  @apply bg-error text-error-content;
+}
+
+.vote-cell.maybe {
+  @apply bg-warning text-warning-content;
+}
+
+.vote-cell.empty {
+  @apply bg-base-300 hover:bg-base-200;
+}
+
+/* Poll card styles */
+.poll-card {
+  @apply card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300;
+}
+
+.poll-card:hover {
+  @apply -translate-y-1;
+}
+
+/* Comment styles */
+.comment {
+  @apply bg-base-200 rounded-lg p-4;
+}
+
+/* Date option chip */
+.date-chip {
+  @apply badge badge-lg gap-2 cursor-pointer hover:badge-primary transition-all;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply loading loading-spinner loading-lg;
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
