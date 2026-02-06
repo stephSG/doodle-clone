@@ -244,13 +244,92 @@ npm run test
 
 ## 📦 Déploiement
 
-### Docker (recommandé)
+### Docker (local)
 
 ```bash
 docker-compose up -d
 ```
 
-### Production
+### Kubernetes K3s (Production)
+
+Le déploiement utilise GitHub Container Registry (GHCR) et le cluster K3s.
+
+#### Prérequis
+
+- Accès SSH au serveur K3s (`51.254.139.110`)
+- GitHub Personal Access Token (PAT) avec permissions `write:packages`
+- `kubectl` configuré pour le cluster K3s
+
+#### Configuration
+
+Le script utilise des variables d'environnement pour les credentials GitHub :
+
+```bash
+export GITHUB_USER="stephSG"           # Votre username GitHub
+export GITHUB_TOKEN="ghp_xxx"          # Votre GitHub PAT (write:packages)
+```
+
+#### Déploiement
+
+```bash
+# Définir les credentials (une seule fois ou dans votre ~/.bashrc)
+export GITHUB_TOKEN="ghp_xxx"
+
+# Déployer sur doodle.kapsule.cloud
+./deploy.sh doodle.kapsule.cloud
+
+# Déployer sur un autre domaine
+./deploy.sh mon-sondage.kapsule.cloud
+```
+
+Le script effectue automatiquement :
+1. **Sync** - Transfert du code via rsync
+2. **Build** - Construction de l'image Docker sur le serveur
+3. **Push** - Publication sur GHCR (`ghcr.io/stephsg/doodle:{tag}`)
+4. **Deploy** - Déploiement K3s avec TLS cert-manager
+
+#### Structure K3s
+
+```
+kube/
+├── 01_namespace.yaml    # Namespace dynamique (doodle-prd)
+├── 02_deployment.yaml   # Deployment + Service (Backend + Frontend)
+├── 03_ingress.yaml      # Ingress TLS avec cert-manager
+└── 04_pvc.yaml          # PersistentVolumeClaim PostgreSQL
+```
+
+#### Commandes utiles
+
+```bash
+# Logs des pods
+ssh -i ~/.ssh/id_ed25519_2 ubuntu@51.254.139.110 \
+  "sudo kubectl logs -f -n doodle-prd deployment/doodle"
+
+# Statut du déploiement
+ssh -i ~/.ssh/id_ed25519_2 ubuntu@51.254.139.110 \
+  "sudo kubectl get all -n doodle-prd"
+
+# Mettre à jour un secret
+ssh -i ~/.ssh/id_ed25519_2 ubuntu@51.254.139.110
+sudo kubectl create secret generic doodle-env -n doodle-prd \
+  --from-literal=JWT_SECRET=ma-cle-secrete \
+  --from-literal=GOOGLE_CLIENT_ID=xxx \
+  --from-literal=GOOGLE_CLIENT_SECRET=xxx \
+  --dry-run=client -o yaml | sudo kubectl apply -f -
+
+# Accès base de données
+ssh -i ~/.ssh/id_ed25519_2 ubuntu@51.254.139.110 \
+  "sudo kubectl port-forward -n doodle-prd svc/postgres-postgresql 5432:5432"
+```
+
+#### Architecture de production
+
+- **Registry** : `ghcr.io/stephsg/doodle`
+- **Ingress** : nginx-ingress avec TLS Let's Encrypt
+- **Database** : PostgreSQL avec PVC persistant
+- **Namespace** : Dynamique basé sur le sous-domaine
+
+### Build manuel
 
 ```bash
 # Frontend
