@@ -12,7 +12,7 @@ IMAGE_FULL_PATH=$(IMAGE_REGISTRY)/$(IMAGE)
 # Namespace
 NAMESPACE := doodle-prd
 
-.PHONY: help build build-app build-image push-image deploy deploy-prd all
+.PHONY: help dev run run-dev build build-app build-image push-image deploy deploy-prd all
 
 help:
 	@echo "Doodle Clone - Build & Deployment"
@@ -50,6 +50,20 @@ run:
 run-dev:
 	@echo "Starting backend with air..."
 	@cd backend && air
+
+dev:
+	@echo "Starting development environment..."
+	@echo "Backend: http://localhost:8080"
+	@echo "Frontend: http://localhost:5173"
+	@-pkill -f "go run main.go" 2>/dev/null || true
+	@-pkill -f "vite" 2>/dev/null || true
+	@make -j2 run-backend-dev run-frontend-dev
+
+run-backend-dev:
+	@cd backend && go run main.go
+
+run-frontend-dev:
+	@cd frontend && npm run dev
 
 # =============================================================================
 # Building
@@ -120,68 +134,9 @@ deploy-prd: push-image
 
 db-create:
 	@echo "Creating PostgreSQL deployment..."
-	@kubectl apply -f - <<EOF
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: doodle-postgres-pvc
-  namespace: $(NAMESPACE)
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres-postgresql
-  namespace: $(NAMESPACE)
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres-postgresql
-  template:
-    metadata:
-      labels:
-        app: postgres-postgresql
-    spec:
-      containers:
-        - name: postgres-postgresql
-          image: postgres:16-alpine
-          env:
-            - name: POSTGRES_USER
-              value: doodle
-            - name: POSTGRES_PASSWORD
-              value: doodle123
-            - name: POSTGRES_DB
-              value: doodle_clone
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: postgres-data
-              mountPath: /var/lib/postgresql/data
-      volumes:
-        - name: postgres-data
-          persistentVolumeClaim:
-            claimName: doodle-postgres-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-postgresql
-  namespace: $(NAMESPACE)
-spec:
-  selector:
-    app: postgres-postgresql
-  ports:
-    - port: 5432
-    targetPort: 5432
-  type: ClusterIP
-EOF
-	@kubectl wait --for=condition=ready --timeout=120s pod -l app=postgres-postgresql -n $(NAMESPACE)
+	@kubectl apply -f kube/04_pvc.yaml -n $(NAMESPACE)
+	@echo "PostgreSQL PVC created"
+	@echo "Note: Using shared PostgreSQL cluster at postgres.postgres.svc.cluster.local"
 
 # =============================================================================
 # Full pipeline

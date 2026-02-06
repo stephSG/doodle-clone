@@ -25,24 +25,15 @@ spec:
             - name: PORT
               value: "8080"
             - name: DB_HOST
-              value: "postgres-postgresql.doodle-prd.svc.cluster.local"
+              value: "postgres.postgres.svc.cluster.local"
             - name: DB_PORT
               value: "5432"
             - name: DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: doodle-env
-                  key: DB_NAME
+              value: "doodle_clone"
             - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: doodle-env
-                  key: DB_USER
+              value: "doodle"
             - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: doodle-env
-                  key: DB_PASSWORD
+              value: "doodle123"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
