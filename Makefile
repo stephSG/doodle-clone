@@ -18,6 +18,7 @@ help:
 	@echo "Doodle Clone - Build & Deployment"
 	@echo ""
 	@echo "Development:"
+	@echo "  make dev           - Start backend + frontend"
 	@echo "  make run           - Run backend locally"
 	@echo "  make run-dev       - Run with hot reload"
 	@echo ""
