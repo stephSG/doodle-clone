@@ -30,7 +30,7 @@ fi
 
 # Docker image (GitHub Container Registry)
 DOCKER_REGISTRY="ghcr.io"
-DOCKER_IMAGE_NAME="${DOCKER_REGISTRY}/${GITHUB_USER}/${NAMESPACE}"
+DOCKER_IMAGE_NAME="${DOCKER_REGISTRY}/$(echo $GITHUB_USER | tr '[:upper:]' '[:lower:]')/${NAMESPACE}"
 GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "latest")
 IMAGE_NAME="${DOCKER_IMAGE_NAME}:${GIT_TAG}"
 
@@ -73,7 +73,7 @@ echo "[4/5] Deploying to K3S..."
 
 ssh -i $SSH_KEY $SERVER "
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-    export GH_USER='$GITHUB_USER'
+    export GH_USER='$(echo $GITHUB_USER | tr '[:upper:]' '[:lower:]')'
     export GH_TOKEN='$GITHUB_TOKEN'
 
     # Create namespace if not exists
