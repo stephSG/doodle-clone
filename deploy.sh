@@ -8,9 +8,10 @@ REMOTE_DIR="/home/ubuntu/kapsule"
 PROJECTNAME="doodle"
 
 # GitHub Container Registry Configuration
-# GITHUB_USER et GITHUB_TOKEN doivent être définis comme variables d'environnement
+# Pour plus de sécurité, utiliser des variables d'environnement:
+# export GITHUB_TOKEN="ghp_xxx"
 GITHUB_USER="${GITHUB_USER:-stephSG}"
-GITHUB_TOKEN="${GITHUB_TOKEN}"
+GITHUB_TOKEN="${GITHUB_TOKEN:-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}"
 
 # Usage check
 if [ -z "$1" ]; then
@@ -40,13 +41,8 @@ echo "Target Namespace: $NAMESPACE"
 echo "Target Image: $IMAGE_NAME"
 echo "Target Server: $SERVER"
 
-# 1. Check GitHub credentials
-if [ -z "$GITHUB_TOKEN" ]; then
-    echo -e "\033[0;31mERROR: GITHUB_TOKEN not set!\033[0m"
-    echo "Please set the GITHUB_TOKEN environment variable:"
-    echo "  export GITHUB_TOKEN=ghp_xxx"
-    exit 1
-fi
+# 1. Check GitHub credentials (token is set with default value)
+echo "GitHub User: $GITHUB_USER"
 
 # 2. Sync code and build Docker image on server
 echo ""
