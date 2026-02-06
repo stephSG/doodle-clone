@@ -184,13 +184,19 @@ func main() {
 	}
 
 	// Serve frontend in production
-	if config.IsProduction() {
-		// This would serve the built frontend files
-		// For now, we'll just return a 404
-		r.NoRoute(func(c *gin.Context) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
-		})
-	}
+	r.NoRoute(func(c *gin.Context) {
+		// Check if the file exists in the frontend directory
+		filePath := "/app/frontend" + c.Request.URL.Path
+		if _, err := os.Stat(filePath); err == nil {
+			c.File(filePath)
+			return
+		}
+		// Serve index.html for SPA routing
+		c.File("/app/frontend/index.html")
+	})
+
+	// Serve frontend static files
+	r.Static("/assets", "/app/frontend/assets")
 
 	// Start server
 	port := config.AppConfig.Port

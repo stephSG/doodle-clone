@@ -1,5 +1,17 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
+# Build frontend stage
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy frontend files
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ ./
+RUN npm run build
+
+# Build backend stage
+FROM golang:1.24-alpine AS backend-builder
 
 WORKDIR /app
 
@@ -26,8 +38,11 @@ WORKDIR /app
 # Install ca-certificates for HTTPS
 RUN apk --no-cache add ca-certificates
 
-# Copy the binary from builder
-COPY --from=builder /app/backend/doodle-backend /app/doodle-backend
+# Copy the binary from backend-builder
+COPY --from=backend-builder /app/backend/doodle-backend /app/doodle-backend
+
+# Copy frontend build from frontend-builder
+COPY --from=frontend-builder /app/dist /app/frontend
 
 # Expose port
 EXPOSE 8080
